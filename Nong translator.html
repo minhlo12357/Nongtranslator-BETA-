@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nong Translator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        /* Custom scrollbar for textareas and select */
+        textarea::-webkit-scrollbar, select::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track, select::-webkit-scrollbar-track {
+            background: #1f2937; /* bg-gray-800 */
+        }
+        textarea::-webkit-scrollbar-thumb, select::-webkit-scrollbar-thumb {
+            background-color: #4b5563; /* bg-gray-600 */
+            border-radius: 20px;
+            border: 3px solid #1f2937; /* bg-gray-800 */
+        }
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239CA3AF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: .65em auto;
+            padding-right: 2.5rem;
+        }
+        .loader {
+            border-top-color: #3498db;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+        @-webkit-keyframes spinner {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-5xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-100">Nong Translator(BETA)</h1>
+            <p class="text-lg text-gray-400 mt-2">The best translator in the world</p>
+        </header>
+
+        <main class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-2 items-start relative">
+            
+            <!-- Source Language Card -->
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg flex flex-col h-full">
+                <select id="source-lang" class="bg-gray-700 text-white p-3 rounded-lg w-full mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <!-- Language options will be populated by JS -->
+                </select>
+                <div class="relative flex-grow">
+                    <textarea id="source-text" class="w-full h-64 bg-transparent text-gray-200 p-3 rounded-lg resize-none focus:outline-none" placeholder="Enter text to translate..." maxlength="15000"></textarea>
+                    <div id="char-count" class="absolute bottom-2 right-3 text-xs text-gray-500">0 / 15000</div>
+                </div>
+            </div>
+
+            <!-- Swap Button -->
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 my-4 md:my-0">
+                 <button id="swap-btn" class="bg-gray-700 hover:bg-blue-600 text-white p-3 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transform transition-transform duration-300"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.6V8.4c0-1.7 1.3-3 3-3h15"/><path d="M7 21.9l-4-4 4-4"/><path d="M21 11.4v4.2c0 1.7-1.3 3-3 3H3"/></svg>
+                </button>
+            </div>
+
+            <!-- Target Language Card -->
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg flex flex-col h-full">
+                <select id="target-lang" class="bg-gray-700 text-white p-3 rounded-lg w-full mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <!-- Language options will be populated by JS -->
+                </select>
+                <div class="relative flex-grow">
+                    <textarea id="translated-text" class="w-full h-64 bg-transparent text-gray-200 p-3 rounded-lg resize-none focus:outline-none" readonly placeholder="Translation..."></textarea>
+                    <div id="loader" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden">
+                        <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-500 h-12 w-12"></div>
+                    </div>
+                    <button id="copy-btn" class="absolute bottom-2 right-3 text-gray-400 hover:text-white transition-colors duration-200 focus:outline-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+        </main>
+        <div id="error-message" class="mt-4 text-center text-red-400 font-medium p-3 bg-red-900/20 rounded-lg hidden"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const sourceLangSelect = document.getElementById('source-lang');
+            const targetLangSelect = document.getElementById('target-lang');
+            const sourceTextarea = document.getElementById('source-text');
+            const translatedTextarea = document.getElementById('translated-text');
+            const swapBtn = document.getElementById('swap-btn');
+            const copyBtn = document.getElementById('copy-btn');
+            const charCount = document.getElementById('char-count');
+            const loader = document.getElementById('loader');
+            const errorMessage = document.getElementById('error-message');
+
+            // --- Language Data (Comprehensive List) ---
+            const languages = [
+                { code: 'af', name: 'Afrikaans' }, { code: 'sq', name: 'Albanian' },
+                { code: 'am', name: 'Amharic' }, { code: 'ar', name: 'Arabic' },
+                { code: 'hy', name: 'Armenian' }, { code: 'az', name: 'Azerbaijani' },
+                { code: 'eu', name: 'Basque' }, { code: 'be', name: 'Belarusian' },
+                { code: 'bn', name: 'Bengali' }, { code: 'bs', name: 'Bosnian' },
+                { code: 'bg', name: 'Bulgarian' }, { code: 'ca', name: 'Catalan' },
+                { code: 'ceb', name: 'Cebuano' }, { code: 'ny', name: 'Chichewa' },
+                { code: 'zh-CN', name: 'Chinese (Simplified)' }, { code: 'zh-TW', name: 'Chinese (Traditional)' },
+                { code: 'co', name: 'Corsican' }, { code: 'hr', name: 'Croatian' },
+                { code: 'cs', name: 'Czech' }, { code: 'da', name: 'Danish' },
+                { code: 'nl', name: 'Dutch' }, { code: 'en', name: 'English' },
+                { code: 'eo', name: 'Esperanto' }, { code: 'et', name: 'Estonian' },
+                { code: 'tl', name: 'Filipino' }, { code: 'fi', name: 'Finnish' },
+                { code: 'fr', name: 'French' }, { code: 'fy', name: 'Frisian' },
+                { code: 'gl', name: 'Galician' }, { code: 'ka', name: 'Georgian' },
+                { code: 'de', name: 'German' }, { code: 'el', name: 'Greek' },
+                { code: 'gn', name: 'Guarani' }, { code: 'gu', name: 'Gujarati' }, 
+                { code: 'ht', name: 'Haitian Creole' }, { code: 'ha', name: 'Hausa' }, 
+                { code: 'haw', name: 'Hawaiian' }, { code: 'iw', name: 'Hebrew' }, 
+                { code: 'hi', name: 'Hindi' }, { code: 'hmn', name: 'Hmong' }, 
+                { code: 'hu', name: 'Hungarian' }, { code: 'is', name: 'Icelandic' }, 
+                { code: 'ig', name: 'Igbo' }, { code: 'id', name: 'Indonesian' }, 
+                { code: 'ga', name: 'Irish' }, { code: 'it', name: 'Italian' }, 
+                { code: 'ja', name: 'Japanese' }, { code: 'jw', name: 'Javanese' }, 
+                { code: 'kn', name: 'Kannada' }, { code: 'kk', name: 'Kazakh' }, 
+                { code: 'km', name: 'Khmer' }, { code: 'rw', name: 'Kinyarwanda' }, 
+                { code: 'ko', name: 'Korean' }, { code: 'ku', name: 'Kurdish (Kurmanji)' },
+                { code: 'ky', name: 'Kyrgyz' }, { code: 'lo', name: 'Lao' }, 
+                { code: 'la', name: 'Latin' }, { code: 'lv', name: 'Latvian' }, 
+                { code: 'lt', name: 'Lithuanian' }, { code: 'lb', name: 'Luxembourgish' },
+                { code: 'mk', name: 'Macedonian' }, { code: 'mg', name: 'Malagasy' },
+                { code: 'ms', name: 'Malay' }, { code: 'ml', name: 'Malayalam' },
+                { code: 'mt', name: 'Maltese' }, { code: 'mi', name: 'Maori' },
+                { code: 'mr', name: 'Marathi' }, { code: 'mn', name: 'Mongolian' },
+                { code: 'my', name: 'Myanmar (Burmese)' }, { code: 'ne', name: 'Nepali' },
+                { code: 'no', name: 'Norwegian' }, { code: 'or', name: 'Odia (Oriya)' },
+                { code: 'om', name: 'Oromo' }, { code: 'ps', name: 'Pashto' }, 
+                { code: 'fa', name: 'Persian' }, { code: 'pl', name: 'Polish' }, 
+                { code: 'pt', name: 'Portuguese' }, { code: 'pa', name: 'Punjabi' },
+                { code: 'qu', name: 'Quechua' }, { code: 'ro', name: 'Romanian' },
+                { code: 'ru', name: 'Russian' }, { code: 'sm', name: 'Samoan' },
+                { code: 'gd', name: 'Scots Gaelic' }, { code: 'sr', name: 'Serbian' },
+                { code: 'st', name: 'Sesotho' }, { code: 'sn', name: 'Shona' },
+                { code: 'sd', name: 'Sindhi' }, { code: 'si', name: 'Sinhala' },
+                { code: 'sk', name: 'Slovak' }, { code: 'sl', name: 'Slovenian' },
+                { code: 'so', name: 'Somali' }, { code: 'es', name: 'Spanish' },
+                { code: 'su', name: 'Sundanese' }, { code: 'sw', name: 'Swahili' },
+                { code: 'sv', name: 'Swedish' }, { code: 'tg', name: 'Tajik' },
+                { code: 'ta', name: 'Tamil' }, { code: 'tt', name: 'Tatar' }, 
+                { code: 'te', name: 'Telugu' }, { code: 'th', name: 'Thai' }, 
+                { code: 'ti', name: 'Tigrinya' }, { code: 'tr', name: 'Turkish' },
+                { code: 'tk', name: 'Turkmen' }, { code: 'uk', name: 'Ukrainian' }, 
+                { code: 'ur', name: 'Urdu' }, { code: 'ug', name: 'Uyghur' }, 
+                { code: 'uz', name: 'Uzbek' }, { code: 'vi', name: 'Vietnamese' }, 
+                { code: 'cy', name: 'Welsh' }, { code: 'xh', name: 'Xhosa' }, 
+                { code: 'yi', name: 'Yiddish' }, { code: 'yo', name: 'Yoruba' }, 
+                { code: 'zu', name: 'Zulu' }
+            ];
+
+            // --- State ---
+            let debounceTimer;
+
+            // --- Functions ---
+
+            /**
+             * Populates the language select dropdowns.
+             */
+            function populateLanguages() {
+                // Add "Detect Language" option to the source dropdown first
+                const detectOption = new Option("Detect Language", "auto");
+                sourceLangSelect.add(detectOption);
+
+                languages.sort((a, b) => a.name.localeCompare(b.name));
+                
+                languages.forEach(lang => {
+                    const option1 = new Option(lang.name, lang.code);
+                    const option2 = new Option(lang.name, lang.code);
+                    sourceLangSelect.add(option1);
+                    targetLangSelect.add(option2);
+                });
+                sourceLangSelect.value = 'auto'; // Default to auto-detection
+                targetLangSelect.value = 'en';
+            }
+
+            /**
+             * Debounces a function to limit how often it's called.
+             */
+            function debounce(func, delay) {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(func, delay);
+            }
+
+            /**
+             * Calls the Gemini API to detect the language of the given text.
+             * @param {string} text The text to analyze.
+             * @returns {Promise<string|null>} The detected language code or null on failure.
+             */
+            async function detectLanguage(text) {
+                const prompt = `Identify the language of the following text and return only its corresponding IETF language tag from this list: ${languages.map(l => l.code).join(', ')}. Do not provide any explanation, context, or additional text. Just return the single language tag. Text: "${text}"`;
+                
+                try {
+                    const apiKey = ""; // API key is handled by the environment
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) throw new Error(`API error during detection: ${response.status}`);
+
+                    const result = await response.json();
+                    if (result.candidates && result.candidates[0]?.content?.parts[0]?.text) {
+                        const detectedCode = result.candidates[0].content.parts[0].text.trim().replace(/['"]+/g, '');
+                        // Verify the detected code is in our list of supported languages
+                        if (languages.some(l => l.code === detectedCode)) {
+                            return detectedCode;
+                        }
+                    }
+                    throw new Error("Could not determine the language from the API response.");
+
+                } catch (error) {
+                    console.error('Language Detection Error:', error);
+                    errorMessage.textContent = 'Failed to detect language. Please select it manually.';
+                    errorMessage.classList.remove('hidden');
+                    return null; // Return null on failure
+                }
+            }
+
+
+            /**
+             * Calls the Gemini API to translate text, handling detection first if needed.
+             */
+            async function translateText() {
+                const sourceText = sourceTextarea.value.trim();
+
+                if (!sourceText) {
+                    translatedTextarea.value = '';
+                    return;
+                }
+                
+                loader.classList.remove('hidden');
+                errorMessage.classList.add('hidden');
+                translatedTextarea.value = '';
+
+                // --- Language Detection Step ---
+                if (sourceLangSelect.value === 'auto') {
+                    const detectedLangCode = await detectLanguage(sourceText);
+                    if (detectedLangCode) {
+                        sourceLangSelect.value = detectedLangCode;
+                        // If detected language is the same as the target, pick a new target to avoid no-op.
+                        if (targetLangSelect.value === detectedLangCode) {
+                            targetLangSelect.value = (detectedLangCode === 'en') ? 'es' : 'en';
+                        }
+                    } else {
+                        loader.classList.add('hidden'); // Stop if detection fails
+                        return; 
+                    }
+                }
+                
+                // --- Translation Step ---
+                const sourceLang = languages.find(l => l.code === sourceLangSelect.value)?.name;
+                const targetLang = languages.find(l => l.code === targetLangSelect.value)?.name;
+
+                if (!sourceLang || !targetLang) {
+                    loader.classList.add('hidden');
+                    return;
+                }
+                
+                if (sourceLang === targetLang) {
+                    translatedTextarea.value = sourceText;
+                    loader.classList.add('hidden');
+                    return;
+                }
+
+                const prompt = `Translate the following text from ${sourceLang} to ${targetLang}. Provide only the translation, without any additional explanations or text. Text to translate: "${sourceText}"`;
+
+                try {
+                    const apiKey = ""; // API key is handled by the environment
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                    
+                    const payload = {
+                        contents: [{
+                            role: "user",
+                            parts: [{ text: prompt }]
+                        }]
+                    };
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errorBody = await response.text();
+                        console.error("API Error Body:", errorBody);
+                        throw new Error(`API error: ${response.status} ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const translated = result.candidates[0].content.parts[0].text;
+                        translatedTextarea.value = translated.trim();
+                    } else {
+                        const blockReason = result.promptFeedback?.blockReason;
+                        if (blockReason) {
+                            throw new Error(`Translation blocked by API. Reason: ${blockReason}`);
+                        } else {
+                            throw new Error("Invalid response format from API.");
+                        }
+                    }
+
+                } catch (error) {
+                    console.error('Translation Error:', error);
+                    errorMessage.textContent = `Failed to translate. ${error.message}`;
+                    errorMessage.classList.remove('hidden');
+                } finally {
+                    loader.classList.add('hidden');
+                }
+            }
+
+            /**
+             * Swaps the source and target languages and their text content.
+             */
+            function swapLanguages() {
+                // Prevent swapping if language is set to auto-detect
+                if (sourceLangSelect.value === 'auto') {
+                    return;
+                }
+                const tempLang = sourceLangSelect.value;
+                sourceLangSelect.value = targetLangSelect.value;
+                targetLangSelect.value = tempLang;
+
+                const tempText = sourceTextarea.value;
+                sourceTextarea.value = translatedTextarea.value;
+                translatedTextarea.value = tempText;
+                
+                updateCharCount();
+
+                if (sourceTextarea.value.trim()) {
+                    debounce(translateText, 0);
+                }
+            }
+
+            /**
+             * Copies the translated text to the clipboard.
+             */
+            function copyToClipboard() {
+                if (!translatedTextarea.value) return;
+
+                const tempTextarea = document.createElement('textarea');
+                tempTextarea.value = translatedTextarea.value;
+                document.body.appendChild(tempTextarea);
+                tempTextarea.select();
+                try {
+                    document.execCommand('copy');
+                    const originalIcon = copyBtn.innerHTML;
+                    copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-400"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalIcon;
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                    errorMessage.textContent = 'Failed to copy text.';
+                    errorMessage.classList.remove('hidden');
+                }
+                document.body.removeChild(tempTextarea);
+            }
+            
+            /**
+             * Updates the character count display.
+             */
+            function updateCharCount() {
+                const limit = 15000;
+                const count = sourceTextarea.value.length;
+                charCount.textContent = `${count} / ${limit}`;
+                if (count > limit) {
+                    charCount.classList.add('text-red-500');
+                } else {
+                    charCount.classList.remove('text-red-500');
+                }
+            }
+
+
+            // --- Event Listeners ---
+            sourceTextarea.addEventListener('input', () => {
+                updateCharCount();
+                // If user clears text, reset source language to auto-detect
+                if (sourceTextarea.value.trim() === '') {
+                    sourceLangSelect.value = 'auto';
+                }
+                debounce(translateText, 500);
+            });
+            sourceLangSelect.addEventListener('change', () => {
+                // Manually changing the language should trigger an immediate translation
+                debounce(translateText, 0)
+            });
+            targetLangSelect.addEventListener('change', () => debounce(translateText, 0));
+            swapBtn.addEventListener('click', swapLanguages);
+            copyBtn.addEventListener('click', copyToClipboard);
+
+            // --- Initialization ---
+            populateLanguages();
+        });
+    </script>
+</body>
+</html>
